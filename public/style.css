@@ -516,8 +516,8 @@ tr:last-child td {
   height: 100%;
   background: rgba(0, 0, 0, 0.85);
   z-index: 1000;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   cursor: pointer;
 }
 
@@ -525,16 +525,12 @@ tr:last-child td {
   display: flex;
 }
 
-.image-modal-content {
+.image-modal img {
   max-width: 90vw;
   max-height: 90vh;
-}
-
-.image-modal-content img {
-  max-width: 100%;
-  max-height: 85vh;
   border-radius: 8px;
   object-fit: contain;
+  cursor: default;
 }
 
 .contact-qr .qr-label {
