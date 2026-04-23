@@ -334,7 +334,7 @@ async function loadCards() {
         .map(
           (c) => `
         <tr>
-          <td><input type="checkbox" class="card-checkbox" value="${c.code}" ${c.status === 'used' ? 'disabled' : ''}></td>
+          <td><input type="checkbox" class="card-checkbox" value="${c.code}"></td>
           <td><code>${c.code}</code></td>
           <td><span class="badge badge-${c.status}">${c.status === 'unused' ? '未使用' : '已使用'}</span></td>
           <td>${c.created_at}</td>
@@ -386,8 +386,35 @@ async function deleteSelectedCards() {
   }
 }
 
-function exportCards() {
-  window.open(`${API_BASE}/admin/cards/export?token=${encodeURIComponent(adminToken)}`, '_blank');
+async function exportCards() {
+  try {
+    const res = await adminFetch('/cards/export');
+    const blob = await res.blob();
+    downloadBlob(blob, 'cards.csv');
+  } catch (e) {
+    alert('导出失败');
+  }
+}
+
+async function exportSubmissions() {
+  try {
+    const res = await adminFetch('/submissions/export');
+    const blob = await res.blob();
+    downloadBlob(blob, 'submissions.csv');
+  } catch (e) {
+    alert('导出失败');
+  }
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 async function loadSubmissions() {
