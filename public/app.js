@@ -7,16 +7,24 @@ let cachedContact = null;
 let cachedCustomDisplay = null;
 let headerClickCount = 0;
 let headerClickTimer = null;
+let adminLinkRevealed = false;
 
 function handleHeaderClick() {
   headerClickCount++;
-  if (headerClickCount >= 5) {
+  if (headerClickCount >= 5 && !adminLinkRevealed) {
     headerClickCount = 0;
-    if (headerClickTimer) {
-      clearTimeout(headerClickTimer);
-      headerClickTimer = null;
+    adminLinkRevealed = true;
+    const link = document.getElementById('hidden-admin-link');
+    if (link) {
+      link.style.display = 'inline';
+      link.style.position = 'absolute';
+      link.style.right = '10px';
+      link.style.top = '10px';
+      link.style.color = '#999';
+      link.style.fontSize = '12px';
+      link.style.textDecoration = 'none';
+      link.style.zIndex = '100';
     }
-    showAdminLogin();
     return;
   }
   if (headerClickTimer) clearTimeout(headerClickTimer);
