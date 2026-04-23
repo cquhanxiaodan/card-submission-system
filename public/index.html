@@ -142,9 +142,7 @@
           <div class="tab-header">
             <h2>卡密管理</h2>
             <div class="tab-actions">
-              <select id="card-gen-group" class="form-select">
-                <option value="">默认分组</option>
-              </select>
+              <input type="text" id="card-gen-group" placeholder="分组名称（如 team）">
               <input type="number" id="card-gen-count" value="10" min="1" max="100" placeholder="数量">
               <button class="btn btn-primary btn-sm" onclick="generateCards()">生成卡密</button>
             </div>
