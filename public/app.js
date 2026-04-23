@@ -478,10 +478,6 @@ async function deleteSelectedSubmissions() {
   }
 }
 
-function exportSubmissions() {
-  window.open(`${API_BASE}/admin/submissions/export?token=${encodeURIComponent(adminToken)}`, '_blank');
-}
-
 async function generateCards() {
   const count = parseInt(document.getElementById('card-gen-count').value) || 10;
   const groupName = document.getElementById('card-gen-group').value.trim();
