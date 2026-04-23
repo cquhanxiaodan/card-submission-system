@@ -147,6 +147,35 @@ adminRoutes.post('/cards/batch-delete', async (c) => {
   return c.json({ success: true, message: '删除成功' });
 });
 
+adminRoutes.get('/cards/export', async (c) => {
+  const cards = await c.env.DB.prepare('SELECT code, status, created_at, used_at FROM cards ORDER BY created_at DESC').all();
+
+  const cardsWithGroup = cards.results.map((card: any) => {
+    const code = card.code as string;
+    const lastUnderscoreIndex = code.lastIndexOf('_');
+    const groupName = lastUnderscoreIndex > 0 ? code.substring(lastUnderscoreIndex + 1) : '';
+    return {
+      code: card.code,
+      group: groupName,
+      status: card.status === 'unused' ? '未使用' : '已使用',
+      created_at: card.created_at,
+      used_at: card.used_at || '',
+    };
+  });
+
+  const headers = ['卡密', '分组', '状态', '创建时间', '使用时间'];
+  const csv = [
+    headers.join(','),
+    ...cardsWithGroup.map((row: any) =>
+      [row.code, row.group, row.status, row.created_at, row.used_at].map(v => `"${v}"`).join(',')
+    ),
+  ].join('\n');
+
+  c.header('Content-Type', 'text/csv; charset=utf-8');
+  c.header('Content-Disposition', 'attachment; filename="cards.csv"');
+  return c.body(csv);
+});
+
 adminRoutes.get('/submissions', async (c) => {
   const page = parseInt(c.req.query('page') || '1');
   const limit = parseInt(c.req.query('limit') || '20');
@@ -181,6 +210,34 @@ adminRoutes.post('/submissions/batch-delete', async (c) => {
   await c.env.DB.prepare(`DELETE FROM submissions WHERE id IN (${placeholders})`).bind(...ids).run();
 
   return c.json({ success: true, message: '删除成功' });
+});
+
+adminRoutes.get('/submissions/export', async (c) => {
+  const submissions = await c.env.DB.prepare('SELECT * FROM submissions ORDER BY submitted_at DESC').all();
+
+  const rows = submissions.results.map((s: any) => {
+    const code = s.card_code as string;
+    const lastUnderscoreIndex = code.lastIndexOf('_');
+    const groupName = lastUnderscoreIndex > 0 ? code.substring(lastUnderscoreIndex + 1) : '';
+    return {
+      code: s.card_code,
+      group: groupName,
+      content: s.content,
+      submitted_at: s.submitted_at,
+    };
+  });
+
+  const headers = ['卡密', '分组', '提交内容', '提交时间'];
+  const csv = [
+    headers.join(','),
+    ...rows.map((row: any) =>
+      [row.code, row.group, `"${row.content.replace(/"/g, '""')}"`, row.submitted_at].join(',')
+    ),
+  ].join('\n');
+
+  c.header('Content-Type', 'text/csv; charset=utf-8');
+  c.header('Content-Disposition', 'attachment; filename="submissions.csv"');
+  return c.body(csv);
 });
 
 adminRoutes.get('/stats', async (c) => {

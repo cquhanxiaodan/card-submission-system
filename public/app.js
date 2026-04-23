@@ -386,6 +386,10 @@ async function deleteSelectedCards() {
   }
 }
 
+function exportCards() {
+  window.open(`${API_BASE}/admin/cards/export?token=${encodeURIComponent(adminToken)}`, '_blank');
+}
+
 async function loadSubmissions() {
   try {
     const res = await adminFetch(`/submissions?page=${submissionsPage}&limit=20`);
@@ -445,6 +449,10 @@ async function deleteSelectedSubmissions() {
   } catch (e) {
     alert('网络错误，请重试');
   }
+}
+
+function exportSubmissions() {
+  window.open(`${API_BASE}/admin/submissions/export?token=${encodeURIComponent(adminToken)}`, '_blank');
 }
 
 async function generateCards() {
