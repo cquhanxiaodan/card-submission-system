@@ -646,6 +646,70 @@ async function deleteDisplayItem(id) {
   }
 }
 
+async function changePassword() {
+  const oldPassword = document.getElementById('old-password').value;
+  const newPassword = document.getElementById('new-password').value;
+  const confirmNew = document.getElementById('confirm-new-password').value;
+  const msgEl = document.getElementById('password-message');
+  const btn = document.getElementById('change-pwd-btn');
+  msgEl.style.display = 'none';
+
+  if (!oldPassword || !newPassword || !confirmNew) {
+    msgEl.className = 'message error';
+    msgEl.textContent = '请填写所有字段';
+    msgEl.style.display = 'block';
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    msgEl.className = 'message error';
+    msgEl.textContent = '新密码长度至少6位';
+    msgEl.style.display = 'block';
+    return;
+  }
+
+  if (newPassword !== confirmNew) {
+    msgEl.className = 'message error';
+    msgEl.textContent = '两次输入的新密码不一致';
+    msgEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '修改中...';
+
+  try {
+    const res = await adminFetch('/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ oldPassword, newPassword }),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      adminToken = data.data.token;
+      sessionStorage.setItem('adminToken', adminToken);
+      document.getElementById('old-password').value = '';
+      document.getElementById('new-password').value = '';
+      document.getElementById('confirm-new-password').value = '';
+      msgEl.className = 'message success';
+      msgEl.textContent = '密码修改成功';
+      msgEl.style.display = 'block';
+    } else {
+      msgEl.className = 'message error';
+      msgEl.textContent = data.message || '修改失败';
+      msgEl.style.display = 'block';
+    }
+  } catch {
+    msgEl.className = 'message error';
+    msgEl.textContent = '网络错误，请重试';
+    msgEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '修改密码';
+  }
+}
+
 function renderPagination(containerId, total, currentPage, limit, onPageChange) {
   const container = document.getElementById(containerId);
   const totalPages = Math.ceil(total / limit);

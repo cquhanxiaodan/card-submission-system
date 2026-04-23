@@ -335,3 +335,32 @@ adminRoutes.delete('/custom-display/:id', async (c) => {
 
   return c.json({ success: true, message: '删除成功' });
 });
+
+adminRoutes.post('/change-password', async (c) => {
+  const { oldPassword, newPassword } = await c.req.json<{
+    oldPassword: string;
+    newPassword: string;
+  }>();
+
+  if (!oldPassword || !newPassword) {
+    return c.json({ success: false, message: '请输入当前密码和新密码' }, 400);
+  }
+
+  if (newPassword.length < 6) {
+    return c.json({ success: false, message: '新密码长度至少6位' }, 400);
+  }
+
+  const admin = c.get('admin');
+  const valid = await verifyPassword(oldPassword, admin.password_hash as string);
+  if (!valid) {
+    return c.json({ success: false, message: '当前密码错误' }, 400);
+  }
+
+  const newHash = await hashPassword(newPassword);
+  await c.env.DB.prepare('UPDATE admins SET password_hash = ? WHERE id = ?')
+    .bind(newHash, admin.id)
+    .run();
+
+  const newToken = btoa(`${admin.username}:${newPassword}`);
+  return c.json({ success: true, message: '密码修改成功', data: { token: newToken } });
+});
