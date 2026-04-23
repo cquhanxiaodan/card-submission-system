@@ -181,9 +181,14 @@
             <h2>提交记录</h2>
           </div>
           <div class="table-container">
+            <div class="table-actions">
+              <label><input type="checkbox" id="select-all-submissions" onchange="toggleSelectAllSubmissions()"> 全选</label>
+              <button class="btn btn-danger btn-sm" onclick="deleteSelectedSubmissions()">删除选中</button>
+            </div>
             <table>
               <thead>
                 <tr>
+                  <th></th>
                   <th>卡密</th>
                   <th>提交内容</th>
                   <th>提交时间</th>

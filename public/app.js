@@ -396,6 +396,7 @@ async function loadSubmissions() {
         .map(
           (s) => `
         <tr>
+          <td><input type="checkbox" class="submission-checkbox" value="${s.id}"></td>
           <td><code>${s.card_code}</code></td>
           <td>${escapeHtml(s.content)}</td>
           <td>${s.submitted_at}</td>
@@ -410,6 +411,39 @@ async function loadSubmissions() {
     }
   } catch (e) {
     console.error('Failed to load submissions', e);
+  }
+}
+
+function toggleSelectAllSubmissions() {
+  const selectAll = document.getElementById('select-all-submissions');
+  const checkboxes = document.querySelectorAll('.submission-checkbox');
+  checkboxes.forEach(cb => cb.checked = selectAll.checked);
+}
+
+async function deleteSelectedSubmissions() {
+  const checkboxes = document.querySelectorAll('.submission-checkbox:checked');
+  const ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
+  if (ids.length === 0) {
+    alert('请先选择要删除的记录');
+    return;
+  }
+  if (!confirm(`确定删除选中的 ${ids.length} 条记录吗？`)) return;
+
+  try {
+    const res = await adminFetch('/submissions/batch-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      loadSubmissions();
+      alert('删除成功');
+    } else {
+      alert(data.message || '删除失败');
+    }
+  } catch (e) {
+    alert('网络错误，请重试');
   }
 }
 

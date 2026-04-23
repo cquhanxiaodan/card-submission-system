@@ -170,6 +170,19 @@ adminRoutes.get('/submissions', async (c) => {
   });
 });
 
+adminRoutes.post('/submissions/batch-delete', async (c) => {
+  const { ids } = await c.req.json<{ ids: number[] }>();
+
+  if (!ids || ids.length === 0) {
+    return c.json({ success: false, message: '请选择要删除的记录' }, 400);
+  }
+
+  const placeholders = ids.map(() => '?').join(',');
+  await c.env.DB.prepare(`DELETE FROM submissions WHERE id IN (${placeholders})`).bind(...ids).run();
+
+  return c.json({ success: true, message: '删除成功' });
+});
+
 adminRoutes.get('/stats', async (c) => {
   const [totalCards, usedCards, totalSubmissions] = await Promise.all([
     c.env.DB.prepare('SELECT COUNT(*) as count FROM cards').first(),
