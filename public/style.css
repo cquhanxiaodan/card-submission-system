@@ -696,6 +696,19 @@ tr:last-child td {
   background: #dc2626;
 }
 
+.mother-code-input {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  width: 120px;
+  outline: none;
+}
+
+.mother-code-input:focus {
+  border-color: var(--primary);
+}
+
 .btn-delete {
   background: transparent;
   border: 1px solid var(--danger);

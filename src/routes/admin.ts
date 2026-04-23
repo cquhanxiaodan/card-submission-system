@@ -199,6 +199,22 @@ adminRoutes.get('/submissions', async (c) => {
   });
 });
 
+adminRoutes.put('/submissions/:id/mother-code', async (c) => {
+  const id = parseInt(c.req.param('id'));
+  const { motherCode } = await c.req.json<{ motherCode: string }>();
+
+  const existing = await c.env.DB.prepare('SELECT id FROM submissions WHERE id = ?').bind(id).first();
+  if (!existing) {
+    return c.json({ success: false, message: '记录不存在' }, 404);
+  }
+
+  await c.env.DB.prepare('UPDATE submissions SET mother_code = ? WHERE id = ?')
+    .bind(motherCode || null, id)
+    .run();
+
+  return c.json({ success: true, message: '更新成功' });
+});
+
 adminRoutes.post('/submissions/batch-delete', async (c) => {
   const { ids } = await c.req.json<{ ids: number[] }>();
 
@@ -223,15 +239,16 @@ adminRoutes.get('/submissions/export', async (c) => {
       code: s.card_code,
       group: groupName,
       content: s.content,
+      mother_code: s.mother_code || '',
       submitted_at: s.submitted_at,
     };
   });
 
-  const headers = ['卡密', '分组', '提交内容', '提交时间'];
+  const headers = ['卡密', '分组', '母号', '提交内容', '提交时间'];
   const csv = [
     headers.join(','),
     ...rows.map((row: any) =>
-      [row.code, row.group, `"${row.content.replace(/"/g, '""')}"`, row.submitted_at].join(',')
+      [row.code, row.group, row.mother_code, `"${row.content.replace(/"/g, '""')}"`, row.submitted_at].join(',')
     ),
   ].join('\n');
 

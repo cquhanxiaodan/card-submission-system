@@ -429,6 +429,7 @@ async function loadSubmissions() {
         <tr>
           <td><input type="checkbox" class="submission-checkbox" value="${s.id}"></td>
           <td><code>${s.card_code}</code></td>
+          <td><input type="text" class="mother-code-input" value="${escapeHtml(s.mother_code || '')}" placeholder="输入母号" onchange="updateMotherCode(${s.id}, this.value)"></td>
           <td>${escapeHtml(s.content)}</td>
           <td>${s.submitted_at}</td>
         </tr>
@@ -442,6 +443,22 @@ async function loadSubmissions() {
     }
   } catch (e) {
     console.error('Failed to load submissions', e);
+  }
+}
+
+async function updateMotherCode(id, motherCode) {
+  try {
+    const res = await adminFetch(`/submissions/${id}/mother-code`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ motherCode }),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      alert(data.message || '保存失败');
+    }
+  } catch (e) {
+    alert('保存失败');
   }
 }
 

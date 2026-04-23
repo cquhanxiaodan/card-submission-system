@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS submissions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   card_code TEXT NOT NULL UNIQUE,
   content TEXT NOT NULL,
+  mother_code TEXT,
   submitted_at TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (card_code) REFERENCES cards(code)
 );
