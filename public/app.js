@@ -153,6 +153,7 @@ async function handleLogin() {
   hideMessage('login-error');
 
   if (code === 'ADMIN888') {
+    document.getElementById('card-code').value = '';
     showAdminLogin();
     return;
   }
