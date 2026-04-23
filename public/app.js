@@ -9,7 +9,7 @@ let headerClickCount = 0;
 let headerClickTimer = null;
 let adminLinkRevealed = false;
 
-function handleHeaderClick() {
+function handleLogoClick() {
   headerClickCount++;
   if (headerClickCount >= 5 && !adminLinkRevealed) {
     headerClickCount = 0;
