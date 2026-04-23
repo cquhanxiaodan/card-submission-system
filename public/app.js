@@ -959,13 +959,6 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-document.addEventListener('keydown', function(e) {
-  if (e.ctrlKey && e.altKey && e.key === 'M') {
-    e.preventDefault();
-    showAdminLogin();
-  }
-});
-
 (async function init() {
   const savedCard = sessionStorage.getItem('cardCode');
   const savedToken = sessionStorage.getItem('adminToken');
