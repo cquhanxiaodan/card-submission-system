@@ -396,9 +396,7 @@
   </div>
 
   <div id="image-modal" class="image-modal" onclick="closeImageModal()">
-    <div class="image-modal-content">
-      <img id="image-modal-img" src="" alt="">
-    </div>
+    <img id="image-modal-img" src="" alt="" onclick="event.stopPropagation()">
   </div>
 
   <script src="/app.js?v=14"></script>
