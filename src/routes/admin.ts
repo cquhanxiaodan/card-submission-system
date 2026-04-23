@@ -552,3 +552,58 @@ adminRoutes.delete('/groups/:id', async (c) => {
   await c.env.DB.prepare('DELETE FROM card_groups WHERE id = ?').bind(id).run();
   return c.json({ success: true, message: '分组删除成功' });
 });
+
+adminRoutes.get('/settings/site', async (c) => {
+  const keys = ['site_title', 'submit_placeholder', 'submit_label'];
+  const result: Record<string, string | null> = {};
+
+  for (const key of keys) {
+    const row = await c.env.DB.prepare('SELECT value FROM settings WHERE key = ?')
+      .bind(key)
+      .first();
+    result[key] = (row?.value as string) || null;
+  }
+
+  return c.json({
+    success: true,
+    data: {
+      siteTitle: result['site_title'],
+      submitPlaceholder: result['submit_placeholder'],
+      submitLabel: result['submit_label'],
+    },
+  });
+});
+
+adminRoutes.put('/settings/site', async (c) => {
+  const { siteTitle, submitPlaceholder, submitLabel } = await c.req.json<{
+    siteTitle?: string;
+    submitPlaceholder?: string;
+    submitLabel?: string;
+  }>();
+
+  const stmts = [];
+
+  if (siteTitle !== undefined) {
+    stmts.push(
+      c.env.DB.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').bind('site_title', siteTitle)
+    );
+  }
+
+  if (submitPlaceholder !== undefined) {
+    stmts.push(
+      c.env.DB.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').bind('submit_placeholder', submitPlaceholder)
+    );
+  }
+
+  if (submitLabel !== undefined) {
+    stmts.push(
+      c.env.DB.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').bind('submit_label', submitLabel)
+    );
+  }
+
+  if (stmts.length > 0) {
+    await c.env.DB.batch(stmts);
+  }
+
+  return c.json({ success: true, message: '设置已更新' });
+});

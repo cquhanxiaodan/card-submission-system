@@ -974,7 +974,7 @@ async function addGroup() {
 
 async function loadSiteSettings() {
   try {
-    const res = await fetch(`${API_BASE}/settings/site`);
+    const res = await adminFetch('/settings/site');
     const data = await res.json();
     if (data.success) {
       document.getElementById('setting-site-title').value = data.data.siteTitle || '';
