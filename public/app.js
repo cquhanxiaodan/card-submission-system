@@ -5,6 +5,19 @@ let cardsPage = 1;
 let submissionsPage = 1;
 let cachedContact = null;
 let cachedCustomDisplay = null;
+let headerClickCount = 0;
+let headerClickTimer = null;
+
+function handleHeaderClick() {
+  headerClickCount++;
+  if (headerClickTimer) clearTimeout(headerClickTimer);
+  headerClickTimer = setTimeout(() => { headerClickCount = 0; }, 2000);
+  if (headerClickCount >= 5) {
+    headerClickCount = 0;
+    if (headerClickTimer) clearTimeout(headerClickTimer);
+    showAdminLogin();
+  }
+}
 
 function showPage(pageId) {
   document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
