@@ -5,6 +5,7 @@ let cardsPage = 1;
 let submissionsPage = 1;
 let cachedContact = null;
 let cachedCustomDisplay = null;
+let cachedSiteSettings = null;
 
 function showPage(pageId) {
   document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
@@ -60,6 +61,21 @@ async function loadContactInfo() {
     }
   } catch (e) {
     console.error('Failed to load contact info', e);
+  }
+  return null;
+}
+
+async function loadSiteSettingsForUser() {
+  if (cachedSiteSettings) return cachedSiteSettings;
+  try {
+    const res = await fetch(`${API_BASE}/settings/site`);
+    const data = await res.json();
+    if (data.success) {
+      cachedSiteSettings = data.data;
+      return data.data;
+    }
+  } catch (e) {
+    console.error('Failed to load site settings', e);
   }
   return null;
 }
@@ -201,10 +217,20 @@ async function checkSubmissionStatus(code) {
       renderCustomDisplay('submitted-custom-display-content', customDisplay);
     } else {
       showPage('submit-page');
+      applySiteSettings();
     }
   } catch {
     showPage('submit-page');
   }
+}
+
+function applySiteSettings() {
+  const settings = cachedSiteSettings;
+  if (!settings) return;
+  const submitPageTitle = document.querySelector('#submit-page h1');
+  const submitPageDesc = document.querySelector('#submit-page p');
+  if (submitPageTitle) submitPageTitle.textContent = settings.siteTitle || '提交信息';
+  if (submitPageDesc) submitPageDesc.textContent = settings.submitPlaceholder || '请认真填写，提交后不可修改';
 }
 
 async function handleSubmit() {
@@ -303,6 +329,7 @@ function showTab(tabName) {
   if (tabName === 'contact') loadContactSettings();
   if (tabName === 'display') loadDisplayItems();
   if (tabName === 'groups') loadGroups();
+  if (tabName === 'site') loadSiteSettings();
 }
 
 async function adminFetch(url, options = {}) {
@@ -943,6 +970,58 @@ async function addGroup() {
   }
 }
 
+async function loadSiteSettings() {
+  try {
+    const res = await fetch(`${API_BASE}/settings/site`);
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('setting-site-title').value = data.data.siteTitle || '';
+      document.getElementById('setting-submit-placeholder').value = data.data.submitPlaceholder || '';
+    }
+  } catch (e) {
+    console.error('Failed to load site settings', e);
+  }
+}
+
+async function saveSiteSettings() {
+  const siteTitle = document.getElementById('setting-site-title').value.trim();
+  const submitPlaceholder = document.getElementById('setting-submit-placeholder').value.trim();
+  const btn = document.getElementById('save-site-btn');
+  const msgEl = document.getElementById('site-settings-message');
+
+  btn.disabled = true;
+  btn.textContent = '保存中...';
+  msgEl.style.display = 'none';
+
+  try {
+    const res = await adminFetch('/settings/site', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ siteTitle, submitPlaceholder }),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      msgEl.className = 'message success';
+      msgEl.textContent = '保存成功';
+      msgEl.style.display = 'block';
+      cachedSiteSettings = null;
+      loadSiteSettingsForUser();
+    } else {
+      msgEl.className = 'message error';
+      msgEl.textContent = data.message || '保存失败';
+      msgEl.style.display = 'block';
+    }
+  } catch {
+    msgEl.className = 'message error';
+    msgEl.textContent = '网络错误，请重试';
+    msgEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '保存设置';
+  }
+}
+
 async function deleteGroup(id) {
   if (!confirm('确定删除该分组吗？')) return;
 
@@ -969,9 +1048,10 @@ function escapeHtml(text) {
   const savedCard = sessionStorage.getItem('cardCode');
   const savedToken = sessionStorage.getItem('adminToken');
 
-  const [contact, customDisplay] = await Promise.all([
+  const [contact, customDisplay, siteSettings] = await Promise.all([
     loadContactInfo(),
     loadCustomDisplay(),
+    loadSiteSettingsForUser(),
   ]);
 
   if (savedToken) {
@@ -985,6 +1065,11 @@ function escapeHtml(text) {
     currentCardCode = savedCard;
     checkSubmissionStatus(savedCard);
     return;
+  }
+
+  if (siteSettings) {
+    const titleEl = document.querySelector('#login-page h1');
+    if (titleEl) titleEl.textContent = siteSettings.siteTitle || '信息提交系统';
   }
 
   showPage('login-page');
