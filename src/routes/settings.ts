@@ -35,7 +35,7 @@ settingsRoutes.get('/custom-display', async (c) => {
 });
 
 settingsRoutes.get('/site', async (c) => {
-  const keys = ['site_title', 'submit_placeholder'];
+  const keys = ['site_title', 'submit_placeholder', 'submit_label'];
   const result: Record<string, string | null> = {};
 
   for (const key of keys) {
@@ -50,14 +50,16 @@ settingsRoutes.get('/site', async (c) => {
     data: {
       siteTitle: result['site_title'],
       submitPlaceholder: result['submit_placeholder'],
+      submitLabel: result['submit_label'],
     },
   });
 });
 
 settingsRoutes.put('/site', async (c) => {
-  const { siteTitle, submitPlaceholder } = await c.req.json<{
+  const { siteTitle, submitPlaceholder, submitLabel } = await c.req.json<{
     siteTitle?: string;
     submitPlaceholder?: string;
+    submitLabel?: string;
   }>();
 
   const stmts = [];
@@ -71,6 +73,12 @@ settingsRoutes.put('/site', async (c) => {
   if (submitPlaceholder !== undefined) {
     stmts.push(
       c.env.DB.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').bind('submit_placeholder', submitPlaceholder)
+    );
+  }
+
+  if (submitLabel !== undefined) {
+    stmts.push(
+      c.env.DB.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').bind('submit_label', submitLabel)
     );
   }
 

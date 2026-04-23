@@ -229,8 +229,10 @@ function applySiteSettings() {
   if (!settings) return;
   const submitPageTitle = document.querySelector('#submit-page h1');
   const submitPageDesc = document.querySelector('#submit-page p');
+  const submitLabel = document.querySelector('#submit-page label[for="submit-content"]');
   if (submitPageTitle) submitPageTitle.textContent = settings.siteTitle || '提交信息';
   if (submitPageDesc) submitPageDesc.textContent = settings.submitPlaceholder || '请认真填写，提交后不可修改';
+  if (submitLabel) submitLabel.textContent = settings.submitLabel || '提交内容';
 }
 
 async function handleSubmit() {
@@ -976,6 +978,7 @@ async function loadSiteSettings() {
     const data = await res.json();
     if (data.success) {
       document.getElementById('setting-site-title').value = data.data.siteTitle || '';
+      document.getElementById('setting-submit-label').value = data.data.submitLabel || '';
       document.getElementById('setting-submit-placeholder').value = data.data.submitPlaceholder || '';
     }
   } catch (e) {
@@ -985,6 +988,7 @@ async function loadSiteSettings() {
 
 async function saveSiteSettings() {
   const siteTitle = document.getElementById('setting-site-title').value.trim();
+  const submitLabel = document.getElementById('setting-submit-label').value.trim();
   const submitPlaceholder = document.getElementById('setting-submit-placeholder').value.trim();
   const btn = document.getElementById('save-site-btn');
   const msgEl = document.getElementById('site-settings-message');
@@ -997,7 +1001,7 @@ async function saveSiteSettings() {
     const res = await adminFetch('/settings/site', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ siteTitle, submitPlaceholder }),
+      body: JSON.stringify({ siteTitle, submitLabel, submitPlaceholder }),
     });
     const data = await res.json();
 
@@ -1070,6 +1074,7 @@ function escapeHtml(text) {
   if (siteSettings) {
     const titleEl = document.querySelector('#login-page h1');
     if (titleEl) titleEl.textContent = siteSettings.siteTitle || '信息提交系统';
+    applySiteSettings();
   }
 
   showPage('login-page');

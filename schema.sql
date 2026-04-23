@@ -42,3 +42,4 @@ CREATE TABLE IF NOT EXISTS settings (
 
 INSERT OR IGNORE INTO settings (key, value) VALUES ('site_title', '信息提交系统');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('submit_placeholder', '请认真填写，提交后不可修改');
+INSERT OR IGNORE INTO settings (key, value) VALUES ('submit_label', '提交内容');
