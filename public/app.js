@@ -10,13 +10,19 @@ let headerClickTimer = null;
 
 function handleHeaderClick() {
   headerClickCount++;
-  if (headerClickTimer) clearTimeout(headerClickTimer);
-  headerClickTimer = setTimeout(() => { headerClickCount = 0; }, 2000);
   if (headerClickCount >= 5) {
     headerClickCount = 0;
-    if (headerClickTimer) clearTimeout(headerClickTimer);
+    if (headerClickTimer) {
+      clearTimeout(headerClickTimer);
+      headerClickTimer = null;
+    }
     showAdminLogin();
+    return;
   }
+  if (headerClickTimer) clearTimeout(headerClickTimer);
+  headerClickTimer = setTimeout(() => {
+    headerClickCount = 0;
+  }, 2000);
 }
 
 function showPage(pageId) {
