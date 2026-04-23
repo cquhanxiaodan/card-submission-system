@@ -192,7 +192,6 @@ async function handleLogin() {
 
     if (data.success) {
       currentCardCode = code;
-      sessionStorage.setItem('cardCode', code);
       checkSubmissionStatus(code);
     } else {
       showMessage('login-error', data.message, 'error');
@@ -210,6 +209,8 @@ async function checkSubmissionStatus(code) {
     const data = await res.json();
 
     if (data.success && data.data.submitted) {
+      document.getElementById('submitted-card-code').textContent = code;
+      document.getElementById('submitted-content').textContent = data.data.content || '';
       document.getElementById('submitted-time').textContent = `提交时间：${data.data.submittedAt}`;
       showPage('submitted-page');
       const [contact, customDisplay] = await Promise.all([loadContactInfo(), loadCustomDisplay()]);
@@ -258,8 +259,10 @@ async function handleSubmit() {
     const data = await res.json();
 
     if (data.success) {
-      showPage('submitted-page');
+      document.getElementById('submitted-card-code').textContent = currentCardCode;
+      document.getElementById('submitted-content').textContent = content;
       document.getElementById('submitted-time').textContent = '刚刚提交';
+      showPage('submitted-page');
       cachedContact = null;
       cachedCustomDisplay = null;
       const [contact, customDisplay] = await Promise.all([loadContactInfo(), loadCustomDisplay()]);
@@ -273,6 +276,31 @@ async function handleSubmit() {
   } finally {
     setLoading('submit-btn', false);
   }
+}
+
+function handleRedeemNext() {
+  currentCardCode = '';
+  sessionStorage.removeItem('cardCode');
+  document.getElementById('card-code').value = '';
+  document.getElementById('submit-content').value = '';
+  document.getElementById('submitted-card-code').textContent = '';
+  document.getElementById('submitted-content').textContent = '';
+  document.getElementById('submitted-time').textContent = '';
+  cachedContact = null;
+  cachedCustomDisplay = null;
+  showPage('login-page');
+  loadContactInfo().then((contact) => {
+    renderContactInfo('login-contact-content', contact);
+  });
+  loadCustomDisplay().then((items) => {
+    renderCustomDisplay('login-custom-display-content', items);
+  });
+  loadSiteSettingsForUser().then((settings) => {
+    if (settings) {
+      const titleEl = document.querySelector('#login-page h1');
+      if (titleEl) titleEl.textContent = settings.siteTitle || '信息提交系统';
+    }
+  });
 }
 
 async function handleAdminLogin() {
@@ -1062,12 +1090,6 @@ function escapeHtml(text) {
     adminToken = savedToken;
     showPage('admin-page');
     loadStats();
-    return;
-  }
-
-  if (savedCard) {
-    currentCardCode = savedCard;
-    checkSubmissionStatus(savedCard);
     return;
   }
 

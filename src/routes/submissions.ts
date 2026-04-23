@@ -59,6 +59,7 @@ submissionRoutes.get('/status/:cardCode', async (c) => {
     data: {
       submitted: true,
       submittedAt: submission.submitted_at,
+      content: submission.content,
     },
   });
 });

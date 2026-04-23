@@ -59,7 +59,18 @@
           <p>您的信息已提交，不可修改</p>
         </div>
         <div class="card-body">
+          <div class="submitted-detail">
+            <div class="submitted-detail-item">
+              <span class="submitted-detail-label">卡密</span>
+              <span class="submitted-detail-value" id="submitted-card-code"></span>
+            </div>
+            <div class="submitted-detail-item">
+              <span class="submitted-detail-label">提交内容</span>
+              <span class="submitted-detail-value" id="submitted-content"></span>
+            </div>
+          </div>
           <p class="submitted-time" id="submitted-time"></p>
+          <button class="btn btn-primary" onclick="handleRedeemNext()">兑换下一个</button>
         </div>
         <div id="submitted-contact" class="contact-section" style="display:none">
           <div id="submitted-contact-content"></div>
