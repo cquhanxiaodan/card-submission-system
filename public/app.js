@@ -106,8 +106,8 @@ function renderContactInfo(containerId, contact) {
 
   if (hasWechat) {
     html += `<div class="contact-qr">
-      <img src="${contact.wechatGroupImage}" alt="微信群二维码">
-      <div class="qr-label">微信售后群</div>
+      <img src="${contact.wechatGroupImage}" alt="微信群二维码" onclick="openImageModal(this.src)" class="qr-clickable">
+      <div class="qr-label">微信群二维码（点击放大）</div>
     </div>`;
   }
 
@@ -1068,6 +1068,18 @@ async function deleteGroup(id) {
   } catch {
     alert('网络错误，请重试');
   }
+}
+
+function openImageModal(src) {
+  const modal = document.getElementById('image-modal');
+  const img = document.getElementById('image-modal-img');
+  img.src = src;
+  modal.classList.add('active');
+}
+
+function closeImageModal() {
+  const modal = document.getElementById('image-modal');
+  modal.classList.remove('active');
 }
 
 function escapeHtml(text) {
