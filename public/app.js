@@ -5,12 +5,6 @@ let cardsPage = 1;
 let submissionsPage = 1;
 let cachedContact = null;
 let cachedCustomDisplay = null;
-document.addEventListener('keydown', function(e) {
-  if (e.ctrlKey && e.altKey && e.key === 'M') {
-    e.preventDefault();
-    showAdminLogin();
-  }
-});
 
 function showPage(pageId) {
   document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
@@ -964,6 +958,13 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
+
+document.addEventListener('keydown', function(e) {
+  if (e.ctrlKey && e.altKey && e.key === 'M') {
+    e.preventDefault();
+    showAdminLogin();
+  }
+});
 
 (async function init() {
   const savedCard = sessionStorage.getItem('cardCode');
