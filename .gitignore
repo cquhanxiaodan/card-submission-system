@@ -46,6 +46,7 @@
 **/.yarn/cache
 **/.pnpm-store/
 **/*.tsbuild*
+package-lock.json
 
 # Wrangler
 .wrangler/
