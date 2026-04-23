@@ -201,10 +201,47 @@ body {
   border: 1px solid #bbf7d0;
 }
 
+#submitted-page .btn-primary {
+  margin-top: 20px;
+}
+
 .submitted-time {
   text-align: center;
   color: var(--text-secondary);
   font-size: 14px;
+}
+
+.submitted-detail {
+  margin-bottom: 16px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+}
+
+.submitted-detail-item {
+  margin-bottom: 12px;
+}
+
+.submitted-detail-item:last-child {
+  margin-bottom: 0;
+}
+
+.submitted-detail-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.submitted-detail-value {
+  display: block;
+  font-size: 14px;
+  color: var(--text);
+  word-break: break-all;
+  line-height: 1.5;
 }
 
 /* Admin styles */
