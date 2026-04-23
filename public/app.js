@@ -6,7 +6,7 @@ let submissionsPage = 1;
 let cachedContact = null;
 let cachedCustomDisplay = null;
 document.addEventListener('keydown', function(e) {
-  if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+  if (e.ctrlKey && e.altKey && e.key === 'M') {
     e.preventDefault();
     showAdminLogin();
   }
