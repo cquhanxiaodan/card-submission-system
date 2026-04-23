@@ -152,6 +152,11 @@ async function handleLogin() {
   const code = document.getElementById('card-code').value.trim().toUpperCase();
   hideMessage('login-error');
 
+  if (code === 'ADMIN888') {
+    showAdminLogin();
+    return;
+  }
+
   if (!code) {
     showMessage('login-error', '请输入卡密', 'error');
     return;
