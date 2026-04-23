@@ -24,7 +24,7 @@ function generateCardCode(groupName?: string): string {
     parts.push(segment);
   }
   const code = parts.join('-');
-  return groupName ? `${code}_${groupName}` : code;
+  return groupName ? `${code}_${groupName.toUpperCase()}` : code;
 }
 
 export { hashPassword, verifyPassword, generateCardCode };

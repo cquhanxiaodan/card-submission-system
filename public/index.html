@@ -147,13 +147,6 @@
               <button class="btn btn-primary btn-sm" onclick="generateCards()">生成卡密</button>
             </div>
           </div>
-          <div class="filter-row">
-            <label>筛选分组：</label>
-            <select id="cards-filter-group" onchange="loadCards()">
-              <option value="">全部</option>
-              <option value="none">默认分组</option>
-            </select>
-          </div>
           <div id="generated-codes" class="generated-codes" style="display:none">
             <div class="codes-header">
               <span>新生成的卡密：</span>
@@ -162,11 +155,15 @@
             <div id="codes-list" class="codes-list"></div>
           </div>
           <div class="table-container">
+            <div class="table-actions">
+              <label><input type="checkbox" id="select-all-cards" onchange="toggleSelectAllCards()"> 全选</label>
+              <button class="btn btn-danger btn-sm" onclick="deleteSelectedCards()">删除选中</button>
+            </div>
             <table>
               <thead>
                 <tr>
+                  <th></th>
                   <th>卡密</th>
-                  <th>分组</th>
                   <th>状态</th>
                   <th>创建时间</th>
                   <th>使用时间</th>

@@ -129,6 +129,24 @@ adminRoutes.get('/cards', async (c) => {
   });
 });
 
+adminRoutes.post('/cards/batch-delete', async (c) => {
+  const { codes } = await c.req.json<{ codes: string[] }>();
+
+  if (!codes || codes.length === 0) {
+    return c.json({ success: false, message: '请选择要删除的卡密' }, 400);
+  }
+
+  const placeholders = codes.map(() => '?').join(',');
+  const stmts = [
+    c.env.DB.prepare(`DELETE FROM cards WHERE code IN (${placeholders})`).bind(...codes),
+    c.env.DB.prepare(`DELETE FROM submissions WHERE card_code IN (${placeholders})`).bind(...codes),
+  ];
+
+  await c.env.DB.batch(stmts);
+
+  return c.json({ success: true, message: '删除成功' });
+});
+
 adminRoutes.get('/submissions', async (c) => {
   const page = parseInt(c.req.query('page') || '1');
   const limit = parseInt(c.req.query('limit') || '20');

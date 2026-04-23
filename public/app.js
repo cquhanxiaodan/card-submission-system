@@ -292,7 +292,7 @@ function showTab(tabName) {
   document.getElementById(`tab-${tabName}`).classList.add('active');
 
   if (tabName === 'stats') loadStats();
-  if (tabName === 'cards') { loadGroups(); loadCards(); }
+  if (tabName === 'cards') loadCards();
   if (tabName === 'submissions') loadSubmissions();
   if (tabName === 'contact') loadContactSettings();
   if (tabName === 'display') loadDisplayItems();
@@ -326,9 +326,7 @@ async function loadStats() {
 
 async function loadCards() {
   try {
-    const groupFilter = document.getElementById('cards-filter-group')?.value || '';
-    const url = `/cards?page=${cardsPage}&limit=20${groupFilter ? '&groupId=' + groupFilter : ''}`;
-    const res = await adminFetch(url);
+    const res = await adminFetch(`/cards?page=${cardsPage}&limit=20`);
     const data = await res.json();
     if (data.success) {
       const tbody = document.getElementById('cards-table-body');
@@ -336,8 +334,8 @@ async function loadCards() {
         .map(
           (c) => `
         <tr>
+          <td><input type="checkbox" class="card-checkbox" value="${c.code}" ${c.status === 'used' ? 'disabled' : ''}></td>
           <td><code>${c.code}</code></td>
-          <td>${c.group_name || '-'}</td>
           <td><span class="badge badge-${c.status}">${c.status === 'unused' ? '未使用' : '已使用'}</span></td>
           <td>${c.created_at}</td>
           <td>${c.used_at || '-'}</td>
@@ -352,6 +350,39 @@ async function loadCards() {
     }
   } catch (e) {
     console.error('Failed to load cards', e);
+  }
+}
+
+function toggleSelectAllCards() {
+  const selectAll = document.getElementById('select-all-cards');
+  const checkboxes = document.querySelectorAll('.card-checkbox:not(:disabled)');
+  checkboxes.forEach(cb => cb.checked = selectAll.checked);
+}
+
+async function deleteSelectedCards() {
+  const checkboxes = document.querySelectorAll('.card-checkbox:checked');
+  const codes = Array.from(checkboxes).map(cb => cb.value);
+  if (codes.length === 0) {
+    alert('请先选择要删除的卡密');
+    return;
+  }
+  if (!confirm(`确定删除选中的 ${codes.length} 个卡密吗？`)) return;
+
+  try {
+    const res = await adminFetch('/cards/batch-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codes }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      loadCards();
+      alert('删除成功');
+    } else {
+      alert(data.message || '删除失败');
+    }
+  } catch (e) {
+    alert('网络错误，请重试');
   }
 }
 
