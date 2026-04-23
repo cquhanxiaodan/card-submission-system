@@ -83,15 +83,22 @@ adminRoutes.post('/init', async (c) => {
 adminRoutes.use('/*', adminAuth);
 
 adminRoutes.post('/cards/generate', async (c) => {
-  const { count = 1 } = await c.req.json<{ count?: number }>();
+  const { count = 1, groupId } = await c.req.json<{ count?: number; groupId?: number }>();
   const clampedCount = Math.min(Math.max(count, 1), 100);
+
+  if (groupId) {
+    const group = await c.env.DB.prepare('SELECT id FROM card_groups WHERE id = ?').bind(groupId).first();
+    if (!group) {
+      return c.json({ success: false, message: '分组不存在' }, 400);
+    }
+  }
 
   const codes: string[] = [];
   const stmts = [];
   for (let i = 0; i < clampedCount; i++) {
     const code = generateCardCode();
     codes.push(code);
-    stmts.push(c.env.DB.prepare('INSERT OR IGNORE INTO cards (code) VALUES (?)').bind(code));
+    stmts.push(c.env.DB.prepare('INSERT OR IGNORE INTO cards (code, group_id) VALUES (?, ?)').bind(code, groupId || null));
   }
 
   await c.env.DB.batch(stmts);
@@ -103,12 +110,25 @@ adminRoutes.get('/cards', async (c) => {
   const page = parseInt(c.req.query('page') || '1');
   const limit = parseInt(c.req.query('limit') || '20');
   const offset = (page - 1) * limit;
+  const groupId = c.req.query('groupId');
+
+  let whereClause = '';
+  const params: any[] = [];
+
+  if (groupId) {
+    if (groupId === 'none') {
+      whereClause = 'WHERE group_id IS NULL';
+    } else {
+      whereClause = 'WHERE group_id = ?';
+      params.push(parseInt(groupId));
+    }
+  }
 
   const [cards, totalResult] = await Promise.all([
-    c.env.DB.prepare('SELECT * FROM cards ORDER BY created_at DESC LIMIT ? OFFSET ?')
-      .bind(limit, offset)
+    c.env.DB.prepare(`SELECT cards.*, card_groups.name as group_name FROM cards LEFT JOIN card_groups ON cards.group_id = card_groups.id ${whereClause} ORDER BY cards.created_at DESC LIMIT ? OFFSET ?`)
+      .bind(...params, limit, offset)
       .all(),
-    c.env.DB.prepare('SELECT COUNT(*) as total FROM cards').first(),
+    c.env.DB.prepare(`SELECT COUNT(*) as total FROM cards ${whereClause}`).bind(...params).first(),
   ]);
 
   return c.json({
@@ -363,4 +383,80 @@ adminRoutes.post('/change-password', async (c) => {
 
   const newToken = btoa(`${admin.username}:${newPassword}`);
   return c.json({ success: true, message: '密码修改成功', data: { token: newToken } });
+});
+
+adminRoutes.get('/groups', async (c) => {
+  const groups = await c.env.DB.prepare('SELECT * FROM card_groups ORDER BY sort_order ASC, id ASC').all();
+  return c.json({ success: true, data: groups.results });
+});
+
+adminRoutes.post('/groups', async (c) => {
+  const { name, sort_order = 0 } = await c.req.json<{ name: string; sort_order?: number }>();
+
+  if (!name || name.trim().length === 0) {
+    return c.json({ success: false, message: '分组名称不能为空' }, 400);
+  }
+
+  const existing = await c.env.DB.prepare('SELECT id FROM card_groups WHERE name = ?').bind(name.trim()).first();
+  if (existing) {
+    return c.json({ success: false, message: '分组名称已存在' }, 400);
+  }
+
+  const result = await c.env.DB.prepare('INSERT INTO card_groups (name, sort_order) VALUES (?, ?)')
+    .bind(name.trim(), sort_order)
+    .run();
+
+  return c.json({ success: true, message: '分组创建成功', data: { id: result.meta.last_row_id } });
+});
+
+adminRoutes.put('/groups/:id', async (c) => {
+  const id = parseInt(c.req.param('id'));
+  const { name, sort_order } = await c.req.json<{ name?: string; sort_order?: number }>();
+
+  const existing = await c.env.DB.prepare('SELECT * FROM card_groups WHERE id = ?').bind(id).first();
+  if (!existing) {
+    return c.json({ success: false, message: '分组不存在' }, 404);
+  }
+
+  if (name !== undefined) {
+    if (name.trim().length === 0) {
+      return c.json({ success: false, message: '分组名称不能为空' }, 400);
+    }
+    const duplicate = await c.env.DB.prepare('SELECT id FROM card_groups WHERE name = ? AND id != ?').bind(name.trim(), id).first();
+    if (duplicate) {
+      return c.json({ success: false, message: '分组名称已存在' }, 400);
+    }
+  }
+
+  const updates: string[] = [];
+  const values: any[] = [];
+
+  if (name !== undefined) { updates.push('name = ?'); values.push(name.trim()); }
+  if (sort_order !== undefined) { updates.push('sort_order = ?'); values.push(sort_order); }
+
+  if (updates.length === 0) {
+    return c.json({ success: false, message: '没有需要更新的内容' }, 400);
+  }
+
+  values.push(id);
+  await c.env.DB.prepare(`UPDATE card_groups SET ${updates.join(', ')} WHERE id = ?`).bind(...values).run();
+
+  return c.json({ success: true, message: '分组更新成功' });
+});
+
+adminRoutes.delete('/groups/:id', async (c) => {
+  const id = parseInt(c.req.param('id'));
+
+  const existing = await c.env.DB.prepare('SELECT * FROM card_groups WHERE id = ?').bind(id).first();
+  if (!existing) {
+    return c.json({ success: false, message: '分组不存在' }, 404);
+  }
+
+  const cardInGroup = await c.env.DB.prepare('SELECT id FROM cards WHERE group_id = ?').bind(id).first();
+  if (cardInGroup) {
+    return c.json({ success: false, message: '该分组下存在卡密，无法删除' }, 400);
+  }
+
+  await c.env.DB.prepare('DELETE FROM card_groups WHERE id = ?').bind(id).run();
+  return c.json({ success: true, message: '分组删除成功' });
 });

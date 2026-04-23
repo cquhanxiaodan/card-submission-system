@@ -110,6 +110,7 @@
             <button class="btn btn-sm" onclick="showTab('contact')">联系方式</button>
             <button class="btn btn-sm" onclick="showTab('display')">自定义展示</button>
             <button class="btn btn-sm" onclick="showTab('password')">修改密码</button>
+            <button class="btn btn-sm" onclick="showTab('groups')">分组管理</button>
             <button class="btn btn-sm btn-danger" onclick="adminLogout()">退出</button>
           </div>
         </header>
@@ -141,9 +142,19 @@
           <div class="tab-header">
             <h2>卡密管理</h2>
             <div class="tab-actions">
+              <select id="card-gen-group" class="form-select">
+                <option value="">默认分组</option>
+              </select>
               <input type="number" id="card-gen-count" value="10" min="1" max="100" placeholder="数量">
               <button class="btn btn-primary btn-sm" onclick="generateCards()">生成卡密</button>
             </div>
+          </div>
+          <div class="filter-row">
+            <label>筛选分组：</label>
+            <select id="cards-filter-group" onchange="loadCards()">
+              <option value="">全部</option>
+              <option value="none">默认分组</option>
+            </select>
           </div>
           <div id="generated-codes" class="generated-codes" style="display:none">
             <div class="codes-header">
@@ -157,6 +168,7 @@
               <thead>
                 <tr>
                   <th>卡密</th>
+                  <th>分组</th>
                   <th>状态</th>
                   <th>创建时间</th>
                   <th>使用时间</th>
@@ -283,6 +295,39 @@
             </div>
             <button class="btn btn-primary" onclick="changePassword()" id="change-pwd-btn">修改密码</button>
             <div id="password-message" class="message" style="display:none"></div>
+          </div>
+        </div>
+
+        <!-- 分组管理 -->
+        <div id="tab-groups" class="tab-content">
+          <div class="tab-header">
+            <h2>分组管理</h2>
+          </div>
+          <div class="settings-card" style="margin-bottom:20px">
+            <h3 class="section-subtitle">添加新分组</h3>
+            <div class="form-group">
+              <label for="group-name">分组名称</label>
+              <input type="text" id="group-name" placeholder="请输入分组名称">
+            </div>
+            <div class="form-group">
+              <label for="group-sort">排序（数字越小越靠前）</label>
+              <input type="number" id="group-sort" value="0" min="0">
+            </div>
+            <button class="btn btn-primary" onclick="addGroup()">添加分组</button>
+            <div id="group-add-message" class="message" style="display:none"></div>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>分组名称</th>
+                  <th>排序</th>
+                  <th>卡密数量</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="groups-table-body"></tbody>
+            </table>
           </div>
         </div>
       </div>
