@@ -11,7 +11,7 @@ async function verifyPassword(password: string, hash: string): Promise<boolean> 
   return computed === hash;
 }
 
-function generateCardCode(): string {
+function generateCardCode(groupName?: string): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const segments = 4;
   const segmentLength = 4;
@@ -23,7 +23,8 @@ function generateCardCode(): string {
     }
     parts.push(segment);
   }
-  return parts.join('-');
+  const code = parts.join('-');
+  return groupName ? `${code}_${groupName.toUpperCase()}` : code;
 }
 
 export { hashPassword, verifyPassword, generateCardCode };

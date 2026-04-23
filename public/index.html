@@ -29,9 +29,6 @@
         <div id="login-custom-display" class="custom-display-section" style="display:none">
           <div id="login-custom-display-content"></div>
         </div>
-        <div class="card-footer">
-          <a href="javascript:void(0)" onclick="showAdminLogin()">管理员入口</a>
-        </div>
       </div>
     </div>
 
@@ -62,7 +59,18 @@
           <p>您的信息已提交，不可修改</p>
         </div>
         <div class="card-body">
+          <div class="submitted-detail">
+            <div class="submitted-detail-item">
+              <span class="submitted-detail-label">卡密</span>
+              <span class="submitted-detail-value" id="submitted-card-code"></span>
+            </div>
+            <div class="submitted-detail-item">
+              <span class="submitted-detail-label">提交内容</span>
+              <span class="submitted-detail-value" id="submitted-content"></span>
+            </div>
+          </div>
           <p class="submitted-time" id="submitted-time"></p>
+          <button class="btn btn-primary" onclick="handleRedeemNext()">兑换下一个</button>
         </div>
         <div id="submitted-contact" class="contact-section" style="display:none">
           <div id="submitted-contact-content"></div>
@@ -109,6 +117,9 @@
             <button class="btn btn-sm" onclick="showTab('submissions')">提交记录</button>
             <button class="btn btn-sm" onclick="showTab('contact')">联系方式</button>
             <button class="btn btn-sm" onclick="showTab('display')">自定义展示</button>
+            <button class="btn btn-sm" onclick="showTab('password')">修改密码</button>
+            <button class="btn btn-sm" onclick="showTab('groups')">分组管理</button>
+            <button class="btn btn-sm" onclick="showTab('site')">网站设置</button>
             <button class="btn btn-sm btn-danger" onclick="adminLogout()">退出</button>
           </div>
         </header>
@@ -140,6 +151,7 @@
           <div class="tab-header">
             <h2>卡密管理</h2>
             <div class="tab-actions">
+              <input type="text" id="card-gen-group" placeholder="分组名称（如 team）">
               <input type="number" id="card-gen-count" value="10" min="1" max="100" placeholder="数量">
               <button class="btn btn-primary btn-sm" onclick="generateCards()">生成卡密</button>
             </div>
@@ -152,9 +164,15 @@
             <div id="codes-list" class="codes-list"></div>
           </div>
           <div class="table-container">
+            <div class="table-actions">
+              <label><input type="checkbox" id="select-all-cards" onchange="toggleSelectAllCards()"> 全选</label>
+              <button class="btn btn-danger btn-sm" onclick="deleteSelectedCards()">删除选中</button>
+              <button class="btn btn-sm" onclick="exportCards()">导出全部</button>
+            </div>
             <table>
               <thead>
                 <tr>
+                  <th></th>
                   <th>卡密</th>
                   <th>状态</th>
                   <th>创建时间</th>
@@ -173,10 +191,17 @@
             <h2>提交记录</h2>
           </div>
           <div class="table-container">
+            <div class="table-actions">
+              <label><input type="checkbox" id="select-all-submissions" onchange="toggleSelectAllSubmissions()"> 全选</label>
+              <button class="btn btn-danger btn-sm" onclick="deleteSelectedSubmissions()">删除选中</button>
+              <button class="btn btn-sm" onclick="exportSubmissions()">导出全部</button>
+            </div>
             <table>
               <thead>
                 <tr>
+                  <th></th>
                   <th>卡密</th>
+                  <th>母号</th>
                   <th>提交内容</th>
                   <th>提交时间</th>
                 </tr>
@@ -261,6 +286,85 @@
             </table>
           </div>
         </div>
+
+        <!-- 修改密码 -->
+        <div id="tab-password" class="tab-content">
+          <div class="tab-header">
+            <h2>修改密码</h2>
+          </div>
+          <div class="settings-card">
+            <div class="form-group">
+              <label for="old-password">当前密码</label>
+              <input type="password" id="old-password" placeholder="请输入当前密码">
+            </div>
+            <div class="form-group">
+              <label for="new-password">新密码</label>
+              <input type="password" id="new-password" placeholder="请输入新密码（至少6位）">
+            </div>
+            <div class="form-group">
+              <label for="confirm-new-password">确认新密码</label>
+              <input type="password" id="confirm-new-password" placeholder="请再次输入新密码">
+            </div>
+            <button class="btn btn-primary" onclick="changePassword()" id="change-pwd-btn">修改密码</button>
+            <div id="password-message" class="message" style="display:none"></div>
+          </div>
+        </div>
+
+        <!-- 分组管理 -->
+        <div id="tab-groups" class="tab-content">
+          <div class="tab-header">
+            <h2>分组管理</h2>
+          </div>
+          <div class="settings-card" style="margin-bottom:20px">
+            <h3 class="section-subtitle">添加新分组</h3>
+            <div class="form-group">
+              <label for="group-name">分组名称</label>
+              <input type="text" id="group-name" placeholder="请输入分组名称">
+            </div>
+            <div class="form-group">
+              <label for="group-sort">排序（数字越小越靠前）</label>
+              <input type="number" id="group-sort" value="0" min="0">
+            </div>
+            <button class="btn btn-primary" onclick="addGroup()">添加分组</button>
+            <div id="group-add-message" class="message" style="display:none"></div>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>分组名称</th>
+                  <th>排序</th>
+                  <th>卡密数量</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="groups-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 网站设置 -->
+        <div id="tab-site" class="tab-content">
+          <div class="tab-header">
+            <h2>网站设置</h2>
+          </div>
+          <div class="settings-card">
+            <div class="form-group">
+              <label for="setting-site-title">首页标题</label>
+              <input type="text" id="setting-site-title" placeholder="请输入首页标题">
+            </div>
+            <div class="form-group">
+              <label for="setting-submit-label">提交内容标签</label>
+              <input type="text" id="setting-submit-label" placeholder="请输入提交内容标签文字">
+            </div>
+            <div class="form-group">
+              <label for="setting-submit-placeholder">提交页提示文字</label>
+              <input type="text" id="setting-submit-placeholder" placeholder="请输入提交页提示文字">
+            </div>
+            <button class="btn btn-primary" onclick="saveSiteSettings()" id="save-site-btn">保存设置</button>
+            <div id="site-settings-message" class="message" style="display:none"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -291,6 +395,6 @@
     </div>
   </div>
 
-  <script src="/app.js"></script>
+  <script src="/app.js?v=13"></script>
 </body>
 </html>

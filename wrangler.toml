@@ -6,4 +6,4 @@ pages_build_output_dir = "./public"
 [[d1_databases]]
 binding = "DB"
 database_name = "card-submission-db"
-database_id = "YOUR_DATABASE_ID"
+database_id = "1b99596b-a9db-4f4a-8cde-aca93d1f1ab7"

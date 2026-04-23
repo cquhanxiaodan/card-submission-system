@@ -5,6 +5,7 @@ let cardsPage = 1;
 let submissionsPage = 1;
 let cachedContact = null;
 let cachedCustomDisplay = null;
+let cachedSiteSettings = null;
 
 function showPage(pageId) {
   document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
@@ -60,6 +61,21 @@ async function loadContactInfo() {
     }
   } catch (e) {
     console.error('Failed to load contact info', e);
+  }
+  return null;
+}
+
+async function loadSiteSettingsForUser() {
+  if (cachedSiteSettings) return cachedSiteSettings;
+  try {
+    const res = await fetch(`${API_BASE}/settings/site`);
+    const data = await res.json();
+    if (data.success) {
+      cachedSiteSettings = data.data;
+      return data.data;
+    }
+  } catch (e) {
+    console.error('Failed to load site settings', e);
   }
   return null;
 }
@@ -152,6 +168,12 @@ async function handleLogin() {
   const code = document.getElementById('card-code').value.trim().toUpperCase();
   hideMessage('login-error');
 
+  if (code === 'ADMIN888') {
+    document.getElementById('card-code').value = '';
+    showAdminLogin();
+    return;
+  }
+
   if (!code) {
     showMessage('login-error', '请输入卡密', 'error');
     return;
@@ -170,7 +192,6 @@ async function handleLogin() {
 
     if (data.success) {
       currentCardCode = code;
-      sessionStorage.setItem('cardCode', code);
       checkSubmissionStatus(code);
     } else {
       showMessage('login-error', data.message, 'error');
@@ -188,6 +209,8 @@ async function checkSubmissionStatus(code) {
     const data = await res.json();
 
     if (data.success && data.data.submitted) {
+      document.getElementById('submitted-card-code').textContent = code;
+      document.getElementById('submitted-content').textContent = data.data.content || '';
       document.getElementById('submitted-time').textContent = `提交时间：${data.data.submittedAt}`;
       showPage('submitted-page');
       const [contact, customDisplay] = await Promise.all([loadContactInfo(), loadCustomDisplay()]);
@@ -195,10 +218,22 @@ async function checkSubmissionStatus(code) {
       renderCustomDisplay('submitted-custom-display-content', customDisplay);
     } else {
       showPage('submit-page');
+      applySiteSettings();
     }
   } catch {
     showPage('submit-page');
   }
+}
+
+function applySiteSettings() {
+  const settings = cachedSiteSettings;
+  if (!settings) return;
+  const submitPageTitle = document.querySelector('#submit-page h1');
+  const submitPageDesc = document.querySelector('#submit-page p');
+  const submitLabel = document.querySelector('#submit-page label[for="submit-content"]');
+  if (submitPageTitle) submitPageTitle.textContent = settings.siteTitle || '提交信息';
+  if (submitPageDesc) submitPageDesc.textContent = settings.submitPlaceholder || '请认真填写，提交后不可修改';
+  if (submitLabel) submitLabel.textContent = settings.submitLabel || '提交内容';
 }
 
 async function handleSubmit() {
@@ -224,8 +259,10 @@ async function handleSubmit() {
     const data = await res.json();
 
     if (data.success) {
-      showPage('submitted-page');
+      document.getElementById('submitted-card-code').textContent = currentCardCode;
+      document.getElementById('submitted-content').textContent = content;
       document.getElementById('submitted-time').textContent = '刚刚提交';
+      showPage('submitted-page');
       cachedContact = null;
       cachedCustomDisplay = null;
       const [contact, customDisplay] = await Promise.all([loadContactInfo(), loadCustomDisplay()]);
@@ -239,6 +276,31 @@ async function handleSubmit() {
   } finally {
     setLoading('submit-btn', false);
   }
+}
+
+function handleRedeemNext() {
+  currentCardCode = '';
+  sessionStorage.removeItem('cardCode');
+  document.getElementById('card-code').value = '';
+  document.getElementById('submit-content').value = '';
+  document.getElementById('submitted-card-code').textContent = '';
+  document.getElementById('submitted-content').textContent = '';
+  document.getElementById('submitted-time').textContent = '';
+  cachedContact = null;
+  cachedCustomDisplay = null;
+  showPage('login-page');
+  loadContactInfo().then((contact) => {
+    renderContactInfo('login-contact-content', contact);
+  });
+  loadCustomDisplay().then((items) => {
+    renderCustomDisplay('login-custom-display-content', items);
+  });
+  loadSiteSettingsForUser().then((settings) => {
+    if (settings) {
+      const titleEl = document.querySelector('#login-page h1');
+      if (titleEl) titleEl.textContent = settings.siteTitle || '信息提交系统';
+    }
+  });
 }
 
 async function handleAdminLogin() {
@@ -296,6 +358,8 @@ function showTab(tabName) {
   if (tabName === 'submissions') loadSubmissions();
   if (tabName === 'contact') loadContactSettings();
   if (tabName === 'display') loadDisplayItems();
+  if (tabName === 'groups') loadGroups();
+  if (tabName === 'site') loadSiteSettings();
 }
 
 async function adminFetch(url, options = {}) {
@@ -333,6 +397,7 @@ async function loadCards() {
         .map(
           (c) => `
         <tr>
+          <td><input type="checkbox" class="card-checkbox" value="${c.code}"></td>
           <td><code>${c.code}</code></td>
           <td><span class="badge badge-${c.status}">${c.status === 'unused' ? '未使用' : '已使用'}</span></td>
           <td>${c.created_at}</td>
@@ -351,6 +416,70 @@ async function loadCards() {
   }
 }
 
+function toggleSelectAllCards() {
+  const selectAll = document.getElementById('select-all-cards');
+  const checkboxes = document.querySelectorAll('.card-checkbox:not(:disabled)');
+  checkboxes.forEach(cb => cb.checked = selectAll.checked);
+}
+
+async function deleteSelectedCards() {
+  const checkboxes = document.querySelectorAll('.card-checkbox:checked');
+  const codes = Array.from(checkboxes).map(cb => cb.value);
+  if (codes.length === 0) {
+    alert('请先选择要删除的卡密');
+    return;
+  }
+  if (!confirm(`确定删除选中的 ${codes.length} 个卡密吗？`)) return;
+
+  try {
+    const res = await adminFetch('/cards/batch-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codes }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      loadCards();
+      alert('删除成功');
+    } else {
+      alert(data.message || '删除失败');
+    }
+  } catch (e) {
+    alert('网络错误，请重试');
+  }
+}
+
+async function exportCards() {
+  try {
+    const res = await adminFetch('/cards/export');
+    const blob = await res.blob();
+    downloadBlob(blob, 'cards.csv');
+  } catch (e) {
+    alert('导出失败');
+  }
+}
+
+async function exportSubmissions() {
+  try {
+    const res = await adminFetch('/submissions/export');
+    const blob = await res.blob();
+    downloadBlob(blob, 'submissions.csv');
+  } catch (e) {
+    alert('导出失败');
+  }
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 async function loadSubmissions() {
   try {
     const res = await adminFetch(`/submissions?page=${submissionsPage}&limit=20`);
@@ -361,7 +490,9 @@ async function loadSubmissions() {
         .map(
           (s) => `
         <tr>
+          <td><input type="checkbox" class="submission-checkbox" value="${s.id}"></td>
           <td><code>${s.card_code}</code></td>
+          <td><input type="text" class="mother-code-input" value="${escapeHtml(s.mother_code || '')}" placeholder="输入母号" onchange="updateMotherCode(${s.id}, this.value)"></td>
           <td>${escapeHtml(s.content)}</td>
           <td>${s.submitted_at}</td>
         </tr>
@@ -378,13 +509,63 @@ async function loadSubmissions() {
   }
 }
 
+async function updateMotherCode(id, motherCode) {
+  try {
+    const res = await adminFetch(`/submissions/${id}/mother-code`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ motherCode }),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      alert(data.message || '保存失败');
+    }
+  } catch (e) {
+    alert('保存失败');
+  }
+}
+
+function toggleSelectAllSubmissions() {
+  const selectAll = document.getElementById('select-all-submissions');
+  const checkboxes = document.querySelectorAll('.submission-checkbox');
+  checkboxes.forEach(cb => cb.checked = selectAll.checked);
+}
+
+async function deleteSelectedSubmissions() {
+  const checkboxes = document.querySelectorAll('.submission-checkbox:checked');
+  const ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
+  if (ids.length === 0) {
+    alert('请先选择要删除的记录');
+    return;
+  }
+  if (!confirm(`确定删除选中的 ${ids.length} 条记录吗？`)) return;
+
+  try {
+    const res = await adminFetch('/submissions/batch-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      loadSubmissions();
+      alert('删除成功');
+    } else {
+      alert(data.message || '删除失败');
+    }
+  } catch (e) {
+    alert('网络错误，请重试');
+  }
+}
+
 async function generateCards() {
   const count = parseInt(document.getElementById('card-gen-count').value) || 10;
+  const groupName = document.getElementById('card-gen-group').value.trim();
   try {
     const res = await adminFetch('/cards/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ count }),
+      body: JSON.stringify({ count, groupName: groupName || undefined }),
     });
     const data = await res.json();
     if (data.success) {
@@ -646,6 +827,70 @@ async function deleteDisplayItem(id) {
   }
 }
 
+async function changePassword() {
+  const oldPassword = document.getElementById('old-password').value;
+  const newPassword = document.getElementById('new-password').value;
+  const confirmNew = document.getElementById('confirm-new-password').value;
+  const msgEl = document.getElementById('password-message');
+  const btn = document.getElementById('change-pwd-btn');
+  msgEl.style.display = 'none';
+
+  if (!oldPassword || !newPassword || !confirmNew) {
+    msgEl.className = 'message error';
+    msgEl.textContent = '请填写所有字段';
+    msgEl.style.display = 'block';
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    msgEl.className = 'message error';
+    msgEl.textContent = '新密码长度至少6位';
+    msgEl.style.display = 'block';
+    return;
+  }
+
+  if (newPassword !== confirmNew) {
+    msgEl.className = 'message error';
+    msgEl.textContent = '两次输入的新密码不一致';
+    msgEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '修改中...';
+
+  try {
+    const res = await adminFetch('/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ oldPassword, newPassword }),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      adminToken = data.data.token;
+      sessionStorage.setItem('adminToken', adminToken);
+      document.getElementById('old-password').value = '';
+      document.getElementById('new-password').value = '';
+      document.getElementById('confirm-new-password').value = '';
+      msgEl.className = 'message success';
+      msgEl.textContent = '密码修改成功';
+      msgEl.style.display = 'block';
+    } else {
+      msgEl.className = 'message error';
+      msgEl.textContent = data.message || '修改失败';
+      msgEl.style.display = 'block';
+    }
+  } catch {
+    msgEl.className = 'message error';
+    msgEl.textContent = '网络错误，请重试';
+    msgEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '修改密码';
+  }
+}
+
 function renderPagination(containerId, total, currentPage, limit, onPageChange) {
   const container = document.getElementById(containerId);
   const totalPages = Math.ceil(total / limit);
@@ -681,6 +926,150 @@ function renderPagination(containerId, total, currentPage, limit, onPageChange) 
   });
 }
 
+async function loadGroups() {
+  try {
+    const res = await adminFetch('/groups');
+    const data = await res.json();
+    if (data.success) {
+      const groups = data.data || [];
+      const genSelect = document.getElementById('card-gen-group');
+      const filterSelect = document.getElementById('cards-filter-group');
+      if (genSelect) {
+        genSelect.innerHTML = '<option value="">默认分组</option>' +
+          groups.map((g) => `<option value="${g.id}">${escapeHtml(g.name)}</option>`).join('');
+      }
+      if (filterSelect) {
+        filterSelect.innerHTML = '<option value="">全部</option><option value="none">默认分组</option>' +
+          groups.map((g) => `<option value="${g.id}">${escapeHtml(g.name)}</option>`).join('');
+      }
+      const tbody = document.getElementById('groups-table-body');
+      if (tbody) {
+        tbody.innerHTML = groups.map((g) => `
+          <tr>
+            <td>${escapeHtml(g.name)}</td>
+            <td>${g.sort_order}</td>
+            <td>-</td>
+            <td><button class="btn-delete" onclick="deleteGroup(${g.id})">删除</button></td>
+          </tr>
+        `).join('');
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load groups', e);
+  }
+}
+
+async function addGroup() {
+  const name = document.getElementById('group-name').value.trim();
+  const sortOrder = parseInt(document.getElementById('group-sort').value) || 0;
+  const msgEl = document.getElementById('group-add-message');
+  msgEl.style.display = 'none';
+
+  if (!name) {
+    msgEl.className = 'message error';
+    msgEl.textContent = '分组名称不能为空';
+    msgEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const res = await adminFetch('/groups', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, sort_order: sortOrder }),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      document.getElementById('group-name').value = '';
+      document.getElementById('group-sort').value = '0';
+      loadGroups();
+      msgEl.className = 'message success';
+      msgEl.textContent = '添加成功';
+      msgEl.style.display = 'block';
+      setTimeout(() => { msgEl.style.display = 'none'; }, 2000);
+    } else {
+      msgEl.className = 'message error';
+      msgEl.textContent = data.message || '添加失败';
+      msgEl.style.display = 'block';
+    }
+  } catch {
+    msgEl.className = 'message error';
+    msgEl.textContent = '网络错误，请重试';
+    msgEl.style.display = 'block';
+  }
+}
+
+async function loadSiteSettings() {
+  try {
+    const res = await adminFetch('/settings/site');
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('setting-site-title').value = data.data.siteTitle || '';
+      document.getElementById('setting-submit-label').value = data.data.submitLabel || '';
+      document.getElementById('setting-submit-placeholder').value = data.data.submitPlaceholder || '';
+    }
+  } catch (e) {
+    console.error('Failed to load site settings', e);
+  }
+}
+
+async function saveSiteSettings() {
+  const siteTitle = document.getElementById('setting-site-title').value.trim();
+  const submitLabel = document.getElementById('setting-submit-label').value.trim();
+  const submitPlaceholder = document.getElementById('setting-submit-placeholder').value.trim();
+  const btn = document.getElementById('save-site-btn');
+  const msgEl = document.getElementById('site-settings-message');
+
+  btn.disabled = true;
+  btn.textContent = '保存中...';
+  msgEl.style.display = 'none';
+
+  try {
+    const res = await adminFetch('/settings/site', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ siteTitle, submitLabel, submitPlaceholder }),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      msgEl.className = 'message success';
+      msgEl.textContent = '保存成功';
+      msgEl.style.display = 'block';
+      cachedSiteSettings = null;
+      loadSiteSettingsForUser();
+    } else {
+      msgEl.className = 'message error';
+      msgEl.textContent = data.message || '保存失败';
+      msgEl.style.display = 'block';
+    }
+  } catch {
+    msgEl.className = 'message error';
+    msgEl.textContent = '网络错误，请重试';
+    msgEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '保存设置';
+  }
+}
+
+async function deleteGroup(id) {
+  if (!confirm('确定删除该分组吗？')) return;
+
+  try {
+    const res = await adminFetch(`/groups/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      loadGroups();
+    } else {
+      alert(data.message || '删除失败');
+    }
+  } catch {
+    alert('网络错误，请重试');
+  }
+}
+
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
@@ -691,9 +1080,10 @@ function escapeHtml(text) {
   const savedCard = sessionStorage.getItem('cardCode');
   const savedToken = sessionStorage.getItem('adminToken');
 
-  const [contact, customDisplay] = await Promise.all([
+  const [contact, customDisplay, siteSettings] = await Promise.all([
     loadContactInfo(),
     loadCustomDisplay(),
+    loadSiteSettingsForUser(),
   ]);
 
   if (savedToken) {
@@ -703,10 +1093,10 @@ function escapeHtml(text) {
     return;
   }
 
-  if (savedCard) {
-    currentCardCode = savedCard;
-    checkSubmissionStatus(savedCard);
-    return;
+  if (siteSettings) {
+    const titleEl = document.querySelector('#login-page h1');
+    if (titleEl) titleEl.textContent = siteSettings.siteTitle || '信息提交系统';
+    applySiteSettings();
   }
 
   showPage('login-page');

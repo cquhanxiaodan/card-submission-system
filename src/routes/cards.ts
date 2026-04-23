@@ -12,7 +12,7 @@ cardRoutes.post('/login', async (c) => {
   }
 
   const card = await c.env.DB.prepare('SELECT * FROM cards WHERE code = ? AND status = ?')
-    .bind(code.trim().toUpperCase(), 'unused')
+    .bind(code.trim(), 'unused')
     .first();
 
   if (!card) {
