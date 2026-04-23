@@ -5,33 +5,12 @@ let cardsPage = 1;
 let submissionsPage = 1;
 let cachedContact = null;
 let cachedCustomDisplay = null;
-let headerClickCount = 0;
-let headerClickTimer = null;
-let adminLinkRevealed = false;
-
-function handleLogoClick() {
-  headerClickCount++;
-  if (headerClickCount >= 5 && !adminLinkRevealed) {
-    headerClickCount = 0;
-    adminLinkRevealed = true;
-    const link = document.getElementById('hidden-admin-link');
-    if (link) {
-      link.style.display = 'inline';
-      link.style.position = 'absolute';
-      link.style.right = '10px';
-      link.style.top = '10px';
-      link.style.color = '#999';
-      link.style.fontSize = '12px';
-      link.style.textDecoration = 'none';
-      link.style.zIndex = '100';
-    }
-    return;
+document.addEventListener('keydown', function(e) {
+  if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+    e.preventDefault();
+    showAdminLogin();
   }
-  if (headerClickTimer) clearTimeout(headerClickTimer);
-  headerClickTimer = setTimeout(() => {
-    headerClickCount = 0;
-  }, 2000);
-}
+});
 
 function showPage(pageId) {
   document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
