@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>信息提交系统</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 登录页 -->
+    <div id="login-page" class="page active">
+      <div class="card">
+        <div class="card-header">
+          <h1>信息提交系统</h1>
+          <p>请输入卡密登录</p>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="card-code">卡密</label>
+            <input type="text" id="card-code" placeholder="请输入卡密（如 XXXX-XXXX-XXXX-XXXX）" autocomplete="off">
+          </div>
+          <button id="login-btn" class="btn btn-primary" onclick="handleLogin()">登录</button>
+          <div id="login-error" class="message error" style="display:none"></div>
+        </div>
+        <div id="login-contact" class="contact-section" style="display:none">
+          <div id="login-contact-content"></div>
+        </div>
+        <div id="login-custom-display" class="custom-display-section" style="display:none">
+          <div id="login-custom-display-content"></div>
+        </div>
+        <div class="card-footer">
+          <a href="javascript:void(0)" onclick="showAdminLogin()">管理员入口</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 提交页 -->
+    <div id="submit-page" class="page">
+      <div class="card">
+        <div class="card-header">
+          <h1>提交信息</h1>
+          <p>请认真填写，提交后不可修改</p>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="submit-content">提交内容</label>
+            <textarea id="submit-content" rows="6" placeholder="请输入您要提交的信息..."></textarea>
+          </div>
+          <button id="submit-btn" class="btn btn-primary" onclick="handleSubmit()">提交</button>
+          <div id="submit-error" class="message error" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 已提交页 -->
+    <div id="submitted-page" class="page">
+      <div class="card">
+        <div class="card-header success">
+          <div class="icon-check">&#10003;</div>
+          <h1>提交成功</h1>
+          <p>您的信息已提交，不可修改</p>
+        </div>
+        <div class="card-body">
+          <p class="submitted-time" id="submitted-time"></p>
+        </div>
+        <div id="submitted-contact" class="contact-section" style="display:none">
+          <div id="submitted-contact-content"></div>
+        </div>
+        <div id="submitted-custom-display" class="custom-display-section" style="display:none">
+          <div id="submitted-custom-display-content"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 管理员登录 -->
+    <div id="admin-login-page" class="page">
+      <div class="card">
+        <div class="card-header">
+          <h1>管理员登录</h1>
+          <p>请输入管理员账号密码</p>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="admin-username">用户名</label>
+            <input type="text" id="admin-username" placeholder="请输入用户名" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="admin-password">密码</label>
+            <input type="password" id="admin-password" placeholder="请输入密码">
+          </div>
+          <button class="btn btn-primary" onclick="handleAdminLogin()">登录</button>
+          <div id="admin-login-error" class="message error" style="display:none"></div>
+        </div>
+        <div class="card-footer">
+          <a href="javascript:void(0)" onclick="showLoginPage()">返回用户登录</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 管理员后台 -->
+    <div id="admin-page" class="page">
+      <div class="admin-container">
+        <header class="admin-header">
+          <h1>管理后台</h1>
+          <div class="admin-actions">
+            <button class="btn btn-sm" onclick="showTab('stats')">统计</button>
+            <button class="btn btn-sm" onclick="showTab('cards')">卡密管理</button>
+            <button class="btn btn-sm" onclick="showTab('submissions')">提交记录</button>
+            <button class="btn btn-sm" onclick="showTab('contact')">联系方式</button>
+            <button class="btn btn-sm" onclick="showTab('display')">自定义展示</button>
+            <button class="btn btn-sm btn-danger" onclick="adminLogout()">退出</button>
+          </div>
+        </header>
+
+        <!-- 统计面板 -->
+        <div id="tab-stats" class="tab-content active">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value" id="stat-total-cards">-</div>
+              <div class="stat-label">卡密总数</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="stat-used-cards">-</div>
+              <div class="stat-label">已使用</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="stat-unused-cards">-</div>
+              <div class="stat-label">未使用</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="stat-total-submissions">-</div>
+              <div class="stat-label">提交总数</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 卡密管理 -->
+        <div id="tab-cards" class="tab-content">
+          <div class="tab-header">
+            <h2>卡密管理</h2>
+            <div class="tab-actions">
+              <input type="number" id="card-gen-count" value="10" min="1" max="100" placeholder="数量">
+              <button class="btn btn-primary btn-sm" onclick="generateCards()">生成卡密</button>
+            </div>
+          </div>
+          <div id="generated-codes" class="generated-codes" style="display:none">
+            <div class="codes-header">
+              <span>新生成的卡密：</span>
+              <button class="btn btn-sm" onclick="copyCodes()">复制全部</button>
+            </div>
+            <div id="codes-list" class="codes-list"></div>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>卡密</th>
+                  <th>状态</th>
+                  <th>创建时间</th>
+                  <th>使用时间</th>
+                </tr>
+              </thead>
+              <tbody id="cards-table-body"></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="cards-pagination"></div>
+        </div>
+
+        <!-- 提交记录 -->
+        <div id="tab-submissions" class="tab-content">
+          <div class="tab-header">
+            <h2>提交记录</h2>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>卡密</th>
+                  <th>提交内容</th>
+                  <th>提交时间</th>
+                </tr>
+              </thead>
+              <tbody id="submissions-table-body"></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="submissions-pagination"></div>
+        </div>
+
+        <!-- 联系方式设置 -->
+        <div id="tab-contact" class="tab-content">
+          <div class="tab-header">
+            <h2>联系方式设置</h2>
+            <p class="tab-desc">设置后将展示在用户登录页和提交成功页</p>
+          </div>
+          <div class="settings-card">
+            <div class="form-group">
+              <label for="setting-qq">QQ号</label>
+              <input type="text" id="setting-qq" placeholder="请输入QQ号">
+            </div>
+            <div class="form-group">
+              <label>微信群二维码</label>
+              <div class="image-upload-area">
+                <input type="file" id="wechat-image-input" accept="image/*" style="display:none" onchange="handleImageUpload(this)">
+                <div id="wechat-image-preview" class="image-preview" onclick="document.getElementById('wechat-image-input').click()">
+                  <div id="wechat-image-placeholder" class="image-placeholder">
+                    <span>点击上传微信群二维码</span>
+                    <span class="image-hint">支持 JPG/PNG，不超过 2MB</span>
+                  </div>
+                  <img id="wechat-image-img" src="" alt="" style="display:none">
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="saveContactSettings()" id="save-contact-btn">保存设置</button>
+            <div id="contact-settings-message" class="message" style="display:none"></div>
+          </div>
+        </div>
+
+        <!-- 自定义展示区管理 -->
+        <div id="tab-display" class="tab-content">
+          <div class="tab-header">
+            <h2>自定义展示区</h2>
+            <p class="tab-desc">添加自定义内容，展示在用户登录页和提交成功页</p>
+          </div>
+          <div class="settings-card" style="margin-bottom:20px">
+            <h3 class="section-subtitle">添加新项目</h3>
+            <div class="form-group">
+              <label for="display-title">标题</label>
+              <input type="text" id="display-title" placeholder="如：店铺链接、售后说明">
+            </div>
+            <div class="form-group">
+              <label for="display-content">内容</label>
+              <input type="text" id="display-content" placeholder="链接地址或文字内容">
+            </div>
+            <div class="form-group">
+              <label for="display-type">类型</label>
+              <select id="display-type" class="form-select">
+                <option value="link">链接</option>
+                <option value="text">纯文本</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="display-sort">排序（数字越小越靠前）</label>
+              <input type="number" id="display-sort" value="0" min="0">
+            </div>
+            <button class="btn btn-primary" onclick="addDisplayItem()">添加</button>
+            <div id="display-add-message" class="message" style="display:none"></div>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>标题</th>
+                  <th>内容</th>
+                  <th>类型</th>
+                  <th>排序</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="display-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 初始化页 -->
+    <div id="init-page" class="page">
+      <div class="card">
+        <div class="card-header">
+          <h1>系统初始化</h1>
+          <p>首次使用，请设置管理员账号</p>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="init-username">管理员用户名</label>
+            <input type="text" id="init-username" placeholder="请输入用户名" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="init-password">管理员密码</label>
+            <input type="password" id="init-password" placeholder="请输入密码">
+          </div>
+          <div class="form-group">
+            <label for="init-password-confirm">确认密码</label>
+            <input type="password" id="init-password-confirm" placeholder="请再次输入密码">
+          </div>
+          <button class="btn btn-primary" onclick="handleInit()">初始化</button>
+          <div id="init-error" class="message error" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

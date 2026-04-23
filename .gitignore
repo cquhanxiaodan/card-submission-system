@@ -47,6 +47,9 @@
 **/.pnpm-store/
 **/*.tsbuild*
 
+# Wrangler
+.wrangler/
+
 # Python
 **/__pycache__/
 *.py[cod]

@@ -1,0 +1,19 @@
+{
+  "name": "card-submission-system",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler pages deploy public --project-name=card-submission",
+    "db:init": "wrangler d1 execute card-submission-db --local --file=./schema.sql",
+    "db:init:remote": "wrangler d1 execute card-submission-db --remote --file=./schema.sql"
+  },
+  "dependencies": {
+    "hono": "^4.7.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.0.0",
+    "typescript": "^5.0.0",
+    "wrangler": "^4.0.0"
+  }
+}

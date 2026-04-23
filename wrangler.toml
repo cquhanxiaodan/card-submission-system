@@ -1,0 +1,9 @@
+name = "card-submission-system"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "./public"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "card-submission-db"
+database_id = "YOUR_DATABASE_ID"
