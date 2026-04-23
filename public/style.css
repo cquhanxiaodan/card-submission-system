@@ -624,6 +624,32 @@ tr:last-child td {
   color: var(--text);
 }
 
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+}
+
+.filter-row label {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.filter-row select {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  appearance: auto;
+}
+
 .form-select {
   width: 100%;
   padding: 12px 16px;

@@ -292,10 +292,11 @@ function showTab(tabName) {
   document.getElementById(`tab-${tabName}`).classList.add('active');
 
   if (tabName === 'stats') loadStats();
-  if (tabName === 'cards') loadCards();
+  if (tabName === 'cards') { loadGroups(); loadCards(); }
   if (tabName === 'submissions') loadSubmissions();
   if (tabName === 'contact') loadContactSettings();
   if (tabName === 'display') loadDisplayItems();
+  if (tabName === 'groups') loadGroups();
 }
 
 async function adminFetch(url, options = {}) {
@@ -325,7 +326,9 @@ async function loadStats() {
 
 async function loadCards() {
   try {
-    const res = await adminFetch(`/cards?page=${cardsPage}&limit=20`);
+    const groupFilter = document.getElementById('cards-filter-group')?.value || '';
+    const url = `/cards?page=${cardsPage}&limit=20${groupFilter ? '&groupId=' + groupFilter : ''}`;
+    const res = await adminFetch(url);
     const data = await res.json();
     if (data.success) {
       const tbody = document.getElementById('cards-table-body');
@@ -334,6 +337,7 @@ async function loadCards() {
           (c) => `
         <tr>
           <td><code>${c.code}</code></td>
+          <td>${c.group_name || '-'}</td>
           <td><span class="badge badge-${c.status}">${c.status === 'unused' ? '未使用' : '已使用'}</span></td>
           <td>${c.created_at}</td>
           <td>${c.used_at || '-'}</td>
@@ -380,11 +384,12 @@ async function loadSubmissions() {
 
 async function generateCards() {
   const count = parseInt(document.getElementById('card-gen-count').value) || 10;
+  const groupId = document.getElementById('card-gen-group').value || undefined;
   try {
     const res = await adminFetch('/cards/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ count }),
+      body: JSON.stringify({ count, groupId: groupId ? parseInt(groupId) : undefined }),
     });
     const data = await res.json();
     if (data.success) {
@@ -393,6 +398,7 @@ async function generateCards() {
       codesList.innerHTML = data.data.codes.map((c) => `<div class="code-item">${c}</div>`).join('');
       codesDiv.style.display = 'block';
       codesDiv.dataset.codes = data.data.codes.join('\n');
+      loadGroups();
       loadCards();
     }
   } catch (e) {
@@ -743,6 +749,96 @@ function renderPagination(containerId, total, currentPage, limit, onPageChange) 
       onPageChange(page);
     });
   });
+}
+
+async function loadGroups() {
+  try {
+    const res = await adminFetch('/groups');
+    const data = await res.json();
+    if (data.success) {
+      const groups = data.data || [];
+      const genSelect = document.getElementById('card-gen-group');
+      const filterSelect = document.getElementById('cards-filter-group');
+      if (genSelect) {
+        genSelect.innerHTML = '<option value="">默认分组</option>' +
+          groups.map((g) => `<option value="${g.id}">${escapeHtml(g.name)}</option>`).join('');
+      }
+      if (filterSelect) {
+        filterSelect.innerHTML = '<option value="">全部</option><option value="none">默认分组</option>' +
+          groups.map((g) => `<option value="${g.id}">${escapeHtml(g.name)}</option>`).join('');
+      }
+      const tbody = document.getElementById('groups-table-body');
+      if (tbody) {
+        tbody.innerHTML = groups.map((g) => `
+          <tr>
+            <td>${escapeHtml(g.name)}</td>
+            <td>${g.sort_order}</td>
+            <td>-</td>
+            <td><button class="btn-delete" onclick="deleteGroup(${g.id})">删除</button></td>
+          </tr>
+        `).join('');
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load groups', e);
+  }
+}
+
+async function addGroup() {
+  const name = document.getElementById('group-name').value.trim();
+  const sortOrder = parseInt(document.getElementById('group-sort').value) || 0;
+  const msgEl = document.getElementById('group-add-message');
+  msgEl.style.display = 'none';
+
+  if (!name) {
+    msgEl.className = 'message error';
+    msgEl.textContent = '分组名称不能为空';
+    msgEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const res = await adminFetch('/groups', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, sort_order: sortOrder }),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      document.getElementById('group-name').value = '';
+      document.getElementById('group-sort').value = '0';
+      loadGroups();
+      msgEl.className = 'message success';
+      msgEl.textContent = '添加成功';
+      msgEl.style.display = 'block';
+      setTimeout(() => { msgEl.style.display = 'none'; }, 2000);
+    } else {
+      msgEl.className = 'message error';
+      msgEl.textContent = data.message || '添加失败';
+      msgEl.style.display = 'block';
+    }
+  } catch {
+    msgEl.className = 'message error';
+    msgEl.textContent = '网络错误，请重试';
+    msgEl.style.display = 'block';
+  }
+}
+
+async function deleteGroup(id) {
+  if (!confirm('确定删除该分组吗？')) return;
+
+  try {
+    const res = await adminFetch(`/groups/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      loadGroups();
+    } else {
+      alert(data.message || '删除失败');
+    }
+  } catch {
+    alert('网络错误，请重试');
+  }
 }
 
 function escapeHtml(text) {
