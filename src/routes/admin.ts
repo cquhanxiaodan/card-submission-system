@@ -83,22 +83,15 @@ adminRoutes.post('/init', async (c) => {
 adminRoutes.use('/*', adminAuth);
 
 adminRoutes.post('/cards/generate', async (c) => {
-  const { count = 1, groupId } = await c.req.json<{ count?: number; groupId?: number }>();
+  const { count = 1, groupName } = await c.req.json<{ count?: number; groupName?: string }>();
   const clampedCount = Math.min(Math.max(count, 1), 100);
-
-  if (groupId) {
-    const group = await c.env.DB.prepare('SELECT id FROM card_groups WHERE id = ?').bind(groupId).first();
-    if (!group) {
-      return c.json({ success: false, message: '分组不存在' }, 400);
-    }
-  }
 
   const codes: string[] = [];
   const stmts = [];
   for (let i = 0; i < clampedCount; i++) {
-    const code = generateCardCode();
+    const code = generateCardCode(groupName);
     codes.push(code);
-    stmts.push(c.env.DB.prepare('INSERT OR IGNORE INTO cards (code, group_id) VALUES (?, ?)').bind(code, groupId || null));
+    stmts.push(c.env.DB.prepare('INSERT OR IGNORE INTO cards (code) VALUES (?)').bind(code));
   }
 
   await c.env.DB.batch(stmts);
@@ -110,31 +103,25 @@ adminRoutes.get('/cards', async (c) => {
   const page = parseInt(c.req.query('page') || '1');
   const limit = parseInt(c.req.query('limit') || '20');
   const offset = (page - 1) * limit;
-  const groupId = c.req.query('groupId');
-
-  let whereClause = '';
-  const params: any[] = [];
-
-  if (groupId) {
-    if (groupId === 'none') {
-      whereClause = 'WHERE group_id IS NULL';
-    } else {
-      whereClause = 'WHERE group_id = ?';
-      params.push(parseInt(groupId));
-    }
-  }
 
   const [cards, totalResult] = await Promise.all([
-    c.env.DB.prepare(`SELECT cards.*, card_groups.name as group_name FROM cards LEFT JOIN card_groups ON cards.group_id = card_groups.id ${whereClause} ORDER BY cards.created_at DESC LIMIT ? OFFSET ?`)
-      .bind(...params, limit, offset)
+    c.env.DB.prepare('SELECT * FROM cards ORDER BY created_at DESC LIMIT ? OFFSET ?')
+      .bind(limit, offset)
       .all(),
-    c.env.DB.prepare(`SELECT COUNT(*) as total FROM cards ${whereClause}`).bind(...params).first(),
+    c.env.DB.prepare('SELECT COUNT(*) as total FROM cards').first(),
   ]);
+
+  const cardsWithGroup = cards.results.map((card: any) => {
+    const code = card.code as string;
+    const lastUnderscoreIndex = code.lastIndexOf('_');
+    const groupName = lastUnderscoreIndex > 0 ? code.substring(lastUnderscoreIndex + 1) : null;
+    return { ...card, group_name: groupName };
+  });
 
   return c.json({
     success: true,
     data: {
-      cards: cards.results,
+      cards: cardsWithGroup,
       total: totalResult?.total as number,
       page,
       limit,

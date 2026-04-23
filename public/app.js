@@ -384,12 +384,12 @@ async function loadSubmissions() {
 
 async function generateCards() {
   const count = parseInt(document.getElementById('card-gen-count').value) || 10;
-  const groupId = document.getElementById('card-gen-group').value || undefined;
+  const groupName = document.getElementById('card-gen-group').value.trim();
   try {
     const res = await adminFetch('/cards/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ count, groupId: groupId ? parseInt(groupId) : undefined }),
+      body: JSON.stringify({ count, groupName: groupName || undefined }),
     });
     const data = await res.json();
     if (data.success) {
@@ -398,7 +398,6 @@ async function generateCards() {
       codesList.innerHTML = data.data.codes.map((c) => `<div class="code-item">${c}</div>`).join('');
       codesDiv.style.display = 'block';
       codesDiv.dataset.codes = data.data.codes.join('\n');
-      loadGroups();
       loadCards();
     }
   } catch (e) {
